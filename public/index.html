@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Game Recommender</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet" />
+  <style>
+    /* ── Reset & base ─────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0a0a0f;
+      --surface:   #111118;
+      --border:    #22222e;
+      --accent:    #00e5a0;
+      --accent2:   #00b8d9;
+      --danger:    #ff4d6d;
+      --text:      #e8e8f0;
+      --muted:     #6b6b80;
+      --font-mono: 'Space Mono', monospace;
+      --font-body: 'DM Sans', sans-serif;
+      --radius:    8px;
+      --glow:      0 0 24px rgba(0,229,160,.18);
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 48px 16px 80px;
+    }
+
+    /* ── Header ───────────────────────────────────────────── */
+    header {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+    .logo {
+      font-family: var(--font-mono);
+      font-size: clamp(1.6rem, 5vw, 2.6rem);
+      font-weight: 700;
+      letter-spacing: -1px;
+      color: var(--accent);
+      text-shadow: var(--glow);
+    }
+    .logo span { color: var(--text); }
+    .tagline {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: .9rem;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+
+    /* ── Card ─────────────────────────────────────────────── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 32px;
+      width: 100%;
+      max-width: 680px;
+    }
+
+    .card-title {
+      font-family: var(--font-mono);
+      font-size: .75rem;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 20px;
+    }
+
+    /* ── Form ─────────────────────────────────────────────── */
+    .field { margin-bottom: 16px; }
+    label {
+      display: block;
+      font-size: .82rem;
+      font-weight: 500;
+      color: var(--muted);
+      margin-bottom: 6px;
+      letter-spacing: .03em;
+      text-transform: uppercase;
+    }
+    input, select {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: .95rem;
+      padding: 10px 14px;
+      outline: none;
+      transition: border-color .2s;
+    }
+    input:focus, select:focus { border-color: var(--accent); }
+    select option { background: #111118; }
+
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    /* ── Mode toggle ──────────────────────────────────────── */
+    .mode-toggle {
+      display: flex;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin-bottom: 24px;
+    }
+    .mode-btn {
+      flex: 1;
+      padding: 10px;
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: .78rem;
+      cursor: pointer;
+      transition: background .2s, color .2s;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+    .mode-btn.active {
+      background: var(--accent);
+      color: #000;
+    }
+
+    /* ── Button ───────────────────────────────────────────── */
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 13px;
+      background: var(--accent);
+      color: #000;
+      font-family: var(--font-mono);
+      font-size: .88rem;
+      font-weight: 700;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      margin-top: 24px;
+      transition: opacity .2s, box-shadow .2s;
+      box-shadow: var(--glow);
+    }
+    .btn:hover { opacity: .88; }
+    .btn:disabled { opacity: .4; cursor: not-allowed; box-shadow: none; }
+
+    /* ── Results ──────────────────────────────────────────── */
+    #results { margin-top: 32px; width: 100%; max-width: 680px; }
+
+    .seed-label {
+      font-family: var(--font-mono);
+      font-size: .75rem;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+    .seed-label strong { color: var(--accent); }
+
+    .result-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      animation: slideIn .3s ease both;
+    }
+    .result-item:nth-child(1)  { animation-delay: .03s; }
+    .result-item:nth-child(2)  { animation-delay: .06s; }
+    .result-item:nth-child(3)  { animation-delay: .09s; }
+    .result-item:nth-child(4)  { animation-delay: .12s; }
+    .result-item:nth-child(5)  { animation-delay: .15s; }
+    .result-item:nth-child(6)  { animation-delay: .18s; }
+    .result-item:nth-child(7)  { animation-delay: .21s; }
+    .result-item:nth-child(8)  { animation-delay: .24s; }
+    .result-item:nth-child(9)  { animation-delay: .27s; }
+    .result-item:nth-child(10) { animation-delay: .30s; }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .rank {
+      font-family: var(--font-mono);
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--accent);
+      min-width: 28px;
+      text-align: right;
+    }
+    .result-info { flex: 1; min-width: 0; }
+    .result-title {
+      font-weight: 600;
+      font-size: 1rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .result-meta {
+      font-size: .78rem;
+      color: var(--muted);
+      margin-top: 3px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .score-bar-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 4px;
+      min-width: 72px;
+    }
+    .score-val {
+      font-family: var(--font-mono);
+      font-size: .78rem;
+      color: var(--accent);
+    }
+    .score-bar {
+      height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      width: 72px;
+      overflow: hidden;
+    }
+    .score-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent2), var(--accent));
+      border-radius: 2px;
+      transition: width .5s ease;
+    }
+
+    /* ── Status / error ───────────────────────────────────── */
+    .status {
+      text-align: center;
+      padding: 24px;
+      color: var(--muted);
+      font-size: .9rem;
+    }
+    .error {
+      background: rgba(255,77,109,.08);
+      border: 1px solid rgba(255,77,109,.3);
+      border-radius: var(--radius);
+      padding: 14px 18px;
+      color: var(--danger);
+      font-size: .9rem;
+      margin-top: 16px;
+    }
+
+    .latency {
+      text-align: right;
+      font-family: var(--font-mono);
+      font-size: .72rem;
+      color: var(--muted);
+      margin-top: 12px;
+    }
+
+    /* ── Hidden ───────────────────────────────────────────── */
+    .hidden { display: none !important; }
+
+    /* ── Spinner ──────────────────────────────────────────── */
+    .spinner {
+      width: 20px; height: 20px;
+      border: 2px solid rgba(0,229,160,.3);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      display: inline-block;
+      animation: spin .7s linear infinite;
+      vertical-align: middle;
+      margin-right: 8px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="logo">Game<span>Rec</span></div>
+    <p class="tagline">ML-Powered Recommendations · Capstone Project</p>
+  </header>
+
+  <!-- Search card -->
+  <div class="card">
+    <p class="card-title">// Find Similar Games</p>
+
+    <div class="mode-toggle">
+      <button class="mode-btn active" id="btn-title" onclick="setMode('title')">By Title</button>
+      <button class="mode-btn" id="btn-features" onclick="setMode('features')">By Features</button>
+    </div>
+
+    <!-- Title mode -->
+    <div id="mode-title">
+      <div class="field">
+        <label for="game-title">Game Title</label>
+        <input id="game-title" type="text" placeholder="e.g. Grand Theft Auto V" />
+      </div>
+    </div>
+
+    <!-- Feature mode -->
+    <div id="mode-features" class="hidden">
+      <div class="row">
+        <div class="field">
+          <label for="f-genre">Genre</label>
+          <select id="f-genre">
+            <option>Action</option><option>Adventure</option><option>Fighting</option>
+            <option>Party</option><option>Puzzle</option><option>RPG</option>
+            <option>Shooter</option><option>Simulation</option><option>Sports</option>
+            <option>Strategy</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="f-platform">Platform</label>
+          <select id="f-platform">
+            <option>PC</option><option>PlayStation</option><option>Xbox</option>
+            <option>Nintendo Switch</option><option>Mobile</option>
+          </select>
+        </div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label for="f-rating">User Rating (1–50)</label>
+          <input id="f-rating" type="number" min="1" max="50" step="0.1" placeholder="35" />
+        </div>
+        <div class="field">
+          <label for="f-price">Price (USD)</label>
+          <input id="f-price" type="number" min="0" max="100" step="0.01" placeholder="39.99" />
+        </div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label for="f-length">Game Length (hours)</label>
+          <input id="f-length" type="number" min="1" max="200" placeholder="30" />
+        </div>
+        <div class="field">
+          <label for="f-multiplayer">Multiplayer</label>
+          <select id="f-multiplayer"><option>No</option><option>Yes</option></select>
+        </div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label for="f-graphics">Graphics Quality</label>
+          <select id="f-graphics">
+            <option>Low</option><option selected>Medium</option>
+            <option>High</option><option>Ultra</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="f-age">Age Group</label>
+          <select id="f-age">
+            <option>Kids</option><option>Teens</option>
+            <option selected>All Ages</option><option>Adults</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:4px">
+      <div class="field">
+        <label for="top-k">Results (max 20)</label>
+        <input id="top-k" type="number" min="1" max="20" value="10" />
+      </div>
+    </div>
+
+    <button class="btn" id="search-btn" onclick="search()">Get Recommendations</button>
+    <div id="error-box" class="error hidden"></div>
+  </div>
+
+  <!-- Results -->
+  <div id="results"></div>
+
+  <script>
+    // ── Config ───────────────────────────────────────────────
+    // Replace with your actual deployed Cloud Function URL after `firebase deploy`
+    const FUNCTION_URL = "https://recommend-oylnz64ghq-uc.a.run.app";
+
+    let mode = "title";
+
+    function setMode(m) {
+      mode = m;
+      document.getElementById("mode-title").classList.toggle("hidden", m !== "title");
+      document.getElementById("mode-features").classList.toggle("hidden", m !== "features");
+      document.getElementById("btn-title").classList.toggle("active", m === "title");
+      document.getElementById("btn-features").classList.toggle("active", m === "features");
+    }
+
+    function showError(msg) {
+      const box = document.getElementById("error-box");
+      box.textContent = msg;
+      box.classList.remove("hidden");
+    }
+
+    function clearError() {
+      document.getElementById("error-box").classList.add("hidden");
+    }
+
+    async function search() {
+      clearError();
+      const btn = document.getElementById("search-btn");
+      const resultsEl = document.getElementById("results");
+      const topK = parseInt(document.getElementById("top-k").value) || 10;
+
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span>Searching…';
+      resultsEl.innerHTML = '';
+
+      let body = { top_k: topK };
+
+      if (mode === "title") {
+        const title = document.getElementById("game-title").value.trim();
+        if (!title) { showError("Please enter a game title."); btn.disabled = false; btn.textContent = "Get Recommendations"; return; }
+        body.game_title = title;
+      } else {
+        body.query = {
+          "Genre":               document.getElementById("f-genre").value,
+          "Platform":            document.getElementById("f-platform").value,
+          "User Rating":         parseFloat(document.getElementById("f-rating").value) || 35,
+          "Price":               parseFloat(document.getElementById("f-price").value) || 39.99,
+          "Game Length (Hours)": parseFloat(document.getElementById("f-length").value) || 30,
+          "Multiplayer":         document.getElementById("f-multiplayer").value,
+          "Graphics Quality":    document.getElementById("f-graphics").value,
+          "Age Group Targeted":  document.getElementById("f-age").value,
+        };
+      }
+
+      try {
+        const resp = await fetch(FUNCTION_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+
+        const data = await resp.json();
+
+        if (!resp.ok) {
+          showError(data.error || "Request failed.");
+          return;
+        }
+
+        renderResults(data);
+      } catch (err) {
+        showError("Network error — is the function deployed? " + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Get Recommendations";
+      }
+    }
+
+    function renderResults(data) {
+      const el = document.getElementById("results");
+
+      let html = "";
+
+      if (data.seed_game) {
+        html += `<p class="seed-label">Recommendations similar to <strong>${esc(data.seed_game)}</strong></p>`;
+      }
+
+      if (!data.results || data.results.length === 0) {
+        html += `<div class="status">No results found.</div>`;
+        el.innerHTML = html;
+        return;
+      }
+
+      // Score range for bar normalisation
+      const maxScore = data.results[0].similarity_score;
+      const minScore = data.results[data.results.length - 1].similarity_score;
+      const range    = maxScore - minScore || 0.0001;
+
+      data.results.forEach(r => {
+        const pct = Math.round(((r.similarity_score - minScore) / range) * 60 + 40);
+        html += `
+          <div class="result-item">
+            <div class="rank">#${r.rank}</div>
+            <div class="result-info">
+              <div class="result-title">${esc(r.game_title)}</div>
+              <div class="result-meta">${esc(r.genre)} · ${esc(r.platform)} · ⭐ ${r.user_rating.toFixed(2)} · $${r.price.toFixed(2)}</div>
+            </div>
+            <div class="score-bar-wrap">
+              <span class="score-val">${(r.similarity_score * 100).toFixed(1)}%</span>
+              <div class="score-bar"><div class="score-fill" style="width:${pct}%"></div></div>
+            </div>
+          </div>`;
+      });
+
+      if (data.latency_ms) {
+        html += `<p class="latency">⚡ ${data.latency_ms} ms</p>`;
+      }
+
+      el.innerHTML = html;
+    }
+
+    function esc(str) {
+      if (typeof str !== "string") return "";
+      return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+    }
+
+    // Allow Enter key in title input
+    document.addEventListener("DOMContentLoaded", () => {
+      document.getElementById("game-title").addEventListener("keydown", e => {
+        if (e.key === "Enter") search();
+      });
+    });
+  </script>
+</body>
+</html>
